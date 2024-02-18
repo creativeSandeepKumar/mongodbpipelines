@@ -312,3 +312,105 @@
     },
   },
 ]
+
+
+const popularcategory = await Blogcategory.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(blogcategoryId),
+      }
+    },
+    {
+      $lookup: {
+        from: "blogs",
+        localField: "_id",
+        foreignField: "category",
+        as: "blogs",
+      }
+    },
+    {
+      $lookup: {
+          from: "blogcategories",
+          localField: "blogs.category",
+          foreignField: "_id",
+          as: "category",
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+                _id: 1
+              }
+            }
+          ]
+      },
+  },
+  {
+      $addFields: {
+        "blogs.category": { $arrayElemAt: ["$category", 0] },
+      },
+  },
+    {
+      $project: {
+        blogs: "$blogs"
+      }
+    }
+  ])
+
+  const popularcategory = await Blogcategory.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(blogcategoryId),
+      }
+    },
+    {
+      $lookup: {
+        from: "blogs",
+        localField: "_id",
+        foreignField: "category",
+        as: "blogs",
+      }
+    },
+    {
+      $lookup: {
+        from: "blogcategories",
+        localField: "blogs.category",
+        foreignField: "_id",
+        as: "category",
+        pipeline: [
+          {
+            $project: {
+              name: 1,
+              _id: 1
+            }
+          }
+        ]
+      },
+    },
+    {
+      $addFields: {
+        "blogs.category": { $arrayElemAt: ["$category", 0] },
+      },
+    },
+    {
+      $unwind: "$blogs" // unwind to access individual blog documents
+    },
+    {
+      $match: {
+        "blogs.status": BlogStatusEnum.PUBLISHED // filter blogs by status
+      }
+    },
+    {
+      $group: {
+        _id: "$_id",
+        category: { $first: "$category" }, // retain category info
+        blogs: { $push: "$blogs" } // collect filtered blogs
+      }
+    },
+    {
+      $project: {
+        _id: 0, // Exclude _id field
+        category: 1, // Include category
+        blogs: 1 // Include filtered blogs
+      }
+    }
+  ]);
